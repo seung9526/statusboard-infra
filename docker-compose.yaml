@@ -1,0 +1,43 @@
+services:
+  db:
+    image: mariadb:11.8
+    container_name: statusboard-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: status_board
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - springmariadb
+
+  backend:
+    build: ./backend
+    container_name: statusboard-backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: status_board
+      DB_USER: root
+      DB_PASSWORD: root
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend/status_b_view
+    container_name: statusboard-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:
+
+networks:
+  springmariadb:

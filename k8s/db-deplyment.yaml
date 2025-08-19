@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb
+  namespace: statusboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+      - name: mariadb
+        image: mariadb:11.8
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: "root"
+          - name: MYSQL_DATABASE
+            value: "status_board"
+        ports:
+          - containerPort: 3306
+        volumeMounts:
+          - name: mariadb-data
+            mountPath: /var/lib/mysql
+      volumes:
+        - name: mariadb-data
+          persistentVolumeClaim:
+            claimName: mariadb-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+  namespace: statusboard
+spec:
+  type: ClusterIP
+  selector:
+    app: mariadb
+  ports:
+    - port: 3306
+      targetPort: 3306

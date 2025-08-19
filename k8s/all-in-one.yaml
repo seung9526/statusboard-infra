@@ -1,0 +1,148 @@
+# all-in-one.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: statusboard
+---
+# MariaDB Deployment + Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb
+  namespace: statusboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+      - name: mariadb
+        image: mariadb:11.8
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: "root"
+          - name: MYSQL_DATABASE
+            value: "status_board"
+        ports:
+          - containerPort: 3306
+        volumeMounts:
+          - name: mariadb-data
+            mountPath: /var/lib/mysql
+      volumes:
+        - name: mariadb-data
+          persistentVolumeClaim:
+            claimName: mariadb-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+  namespace: statusboard
+spec:
+  type: ClusterIP
+  selector:
+    app: mariadb
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+# MariaDB PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mariadb-pvc
+  namespace: statusboard
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Backend Deployment + Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: statusboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: seumg9526/statusboard-backend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 8080
+        env:
+          - name: SPRING_DATASOURCE_URL
+            value: jdbc:mariadb://mariadb:3306/status_board
+          - name: SPRING_DATASOURCE_USERNAME
+            value: root
+          - name: SPRING_DATASOURCE_PASSWORD
+            value: root
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: statusboard
+spec:
+  type: ClusterIP
+  selector:
+    app: backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+# Frontend Deployment + Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: statusboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: seumg9526/statusboard-frontend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 80
+        env:
+          - name: REACT_APP_BACKEND_URL
+            value: http://backend:8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: statusboard
+spec:
+  type: NodePort
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080
