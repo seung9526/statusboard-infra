@@ -1,0 +1,620 @@
+---
+# Source: statusboard/templates/components.yaml
+#components
+# ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: metrics-server
+  namespace: statusboard
+  labels:
+    k8s-app: metrics-server
+---
+# Source: statusboard/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: statusboard
+  labels:
+    helm.sh/chart: statusboard-0.1.0
+    app.kubernetes.io/name: statusboard
+    app.kubernetes.io/instance: statusboard
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: true
+---
+# Source: statusboard/templates/db-secret.yaml
+#db-secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-secret
+  namespace: statusboard
+type: Opaque
+data:
+  username: cm9vdA==
+  password: cm9vdA==
+---
+# Source: statusboard/templates/backend-config.yaml
+#backend-config
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: statusboard
+data:
+  SPRING_DATASOURCE_URL: "jdbc:mariadb://statusboard-mariadb:3306/status_board"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+  SPRING_PROFILES_ACTIVE: "dev"
+---
+# Source: statusboard/templates/components.yaml
+# ClusterRole: aggregated-metrics-reader
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: system:aggregated-metrics-reader
+  labels:
+    k8s-app: metrics-server
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules:
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["get","list","watch"]
+---
+# Source: statusboard/templates/components.yaml
+# ClusterRole: metrics-server
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: system:metrics-server
+  labels:
+    k8s-app: metrics-server
+rules:
+  - apiGroups: [""]
+    resources: ["nodes/metrics"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["pods", "nodes"]
+    verbs: ["get", "list", "watch"]
+---
+# Source: statusboard/templates/components.yaml
+# ClusterRoleBinding: auth-delegator
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: metrics-server:system:auth-delegator
+  labels:
+    k8s-app: metrics-server
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - kind: ServiceAccount
+    name: metrics-server
+    namespace: kube-system
+---
+# Source: statusboard/templates/components.yaml
+# ClusterRoleBinding: metrics-server
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: system:metrics-server
+  labels:
+    k8s-app: metrics-server
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:metrics-server
+subjects:
+  - kind: ServiceAccount
+    name: metrics-server
+    namespace: kube-system
+---
+# Source: statusboard/templates/components.yaml
+# RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: metrics-server-auth-reader
+  namespace: kube-system
+  labels:
+    k8s-app: metrics-server
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: extension-apiserver-authentication-reader
+subjects:
+  - kind: ServiceAccount
+    name: metrics-server
+    namespace: kube-system
+---
+# Source: statusboard/templates/backend-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: statusboard-backend
+  labels:
+    helm.sh/chart: statusboard-0.1.0
+    app.kubernetes.io/name: statusboard
+    app.kubernetes.io/instance: statusboard
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: statusboard
+    app.kubernetes.io/component: backend
+---
+# Source: statusboard/templates/backend.yaml
+#backend.ymal
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: statusboard
+spec:
+  ports:
+    - port: 8080
+  selector:
+    app: backend
+---
+# Source: statusboard/templates/components.yaml
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: metrics-server
+  namespace: kube-system
+  labels:
+    k8s-app: metrics-server
+spec:
+  ports:
+    - appProtocol: https
+      name: https
+      port: 443
+      protocol: TCP
+      targetPort: https
+  selector:
+    k8s-app: metrics-server
+---
+# Source: statusboard/templates/db-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: statusboard-mariadb
+  labels:
+    helm.sh/chart: statusboard-0.1.0
+    app.kubernetes.io/name: statusboard
+    app.kubernetes.io/instance: statusboard
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3306
+      targetPort: 3306
+      protocol: TCP
+      name: mysql
+  selector:
+    app.kubernetes.io/name: statusboard
+    app.kubernetes.io/component: mariadb
+---
+# Source: statusboard/templates/db.yaml
+#db
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+  namespace: statusboard
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: mariadb
+---
+# Source: statusboard/templates/frontend-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: statusboard-frontend
+  labels:
+    helm.sh/chart: statusboard-0.1.0
+    app.kubernetes.io/name: statusboard
+    app.kubernetes.io/instance: statusboard
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: statusboard
+    app.kubernetes.io/component: frontend
+---
+# Source: statusboard/templates/frontend.yaml
+#frontend
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: statusboard
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      nodePort: 30080
+      targetPort: 80
+  selector:
+    app: frontend
+---
+# Source: statusboard/templates/backend.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: statusboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: seumg9526/statusboard-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mariadb://statusboard-mariadb:3306/status_board"
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: "update"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "dev"
+---
+# Source: statusboard/templates/components.yaml
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrics-server
+  namespace: kube-system
+  labels:
+    k8s-app: metrics-server
+spec:
+  selector:
+    matchLabels:
+      k8s-app: metrics-server
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        k8s-app: metrics-server
+    spec:
+      serviceAccountName: metrics-server
+      containers:
+        - name: metrics-server
+          image: "registry.k8s.io/metrics-server/metrics-server:v0.8.0"
+          imagePullPolicy: IfNotPresent
+          args:
+            - --cert-dir=/tmp
+            - --secure-port=10250
+            - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+            - --kubelet-use-node-status-port
+            - --metric-resolution=15s
+            - --kubelet-insecure-tls
+          ports:
+            - containerPort: 10250
+              name: https
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /livez
+              port: https
+              scheme: HTTPS
+            periodSeconds: 10
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /readyz
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-dir
+      nodeSelector:
+        kubernetes.io/os: linux
+      priorityClassName: system-cluster-critical
+      volumes:
+        - emptyDir: {}
+          name: tmp-dir
+---
+# Source: statusboard/templates/db.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb
+  namespace: statusboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+        - name: mariadb
+          image: mariadb:11.8
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "root"
+            - name: MYSQL_DATABASE
+              value: "status_board"
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: mariadb-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mariadb-data
+          emptyDir: {}
+---
+# Source: statusboard/templates/deployment.yaml
+# Backend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: statusboard-backend
+  namespace: statusboard
+  labels:
+    app.kubernetes.io/name: statusboard
+    app.kubernetes.io/component: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: statusboard
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: statusboard
+        app.kubernetes.io/component: backend
+    spec:
+      serviceAccountName: statusboard
+      containers:
+        - name: backend
+          image: "seumg9526/statusboard-backend:latest"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mariadb://statusboard-mariadb:3306/status_board"
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: "update"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "dev"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+---
+# Source: statusboard/templates/deployment.yaml
+# Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: statusboard-frontend
+  namespace: statusboard
+  labels:
+    app.kubernetes.io/name: statusboard
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: statusboard
+      app.kubernetes.io/component: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: statusboard
+        app.kubernetes.io/component: frontend
+    spec:
+      serviceAccountName: statusboard
+      containers:
+        - name: frontend
+          image: "seumg9526/statusboard-frontend:latest"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          env:
+            - name: REACT_APP_BACKEND_URL
+              value: "http://<Node IP>:30080"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+---
+# Source: statusboard/templates/deployment.yaml
+# MariaDB Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: statusboard-mariadb
+  namespace: statusboard
+  labels:
+    app.kubernetes.io/name: statusboard
+    app.kubernetes.io/component: mariadb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: statusboard
+      app.kubernetes.io/component: mariadb
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: statusboard
+        app.kubernetes.io/component: mariadb
+    spec:
+      containers:
+        - name: mariadb
+          image: "mariadb:11.8"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: mysql
+              containerPort: 3306
+              protocol: TCP
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "root"
+            - name: MYSQL_DATABASE
+              value: "status_board"
+---
+# Source: statusboard/templates/frontend.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: statusboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: seumg9526/statusboard-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          env:
+            - name: REACT_APP_BACKEND_URL
+              value: "http://<Node IP>:30080"
+---
+# Source: statusboard/templates/ingress.yaml
+#ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: statusboard-ingress
+  namespace: statusboard
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: localhost
+    http:
+      paths:
+      - path: /(api/.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: statusboard-backend
+            port:
+              number: 8080
+      - path: /(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: statusboard-frontend
+            port:
+              number: 80
+---
+# Source: statusboard/templates/components.yaml
+# APIService
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1beta1.metrics.k8s.io
+  labels:
+    k8s-app: metrics-server
+spec:
+  group: metrics.k8s.io
+  groupPriorityMinimum: 100
+  insecureSkipTLSVerify: true
+  service:
+    name: metrics-server
+    namespace: kube-system
+  version: v1beta1
+  versionPriority: 100
+---
+# Source: statusboard/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "statusboard-test-connection"
+  labels:
+    helm.sh/chart: statusboard-0.1.0
+    app.kubernetes.io/name: statusboard
+    app.kubernetes.io/instance: statusboard
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['statusboard:']
+  restartPolicy: Never

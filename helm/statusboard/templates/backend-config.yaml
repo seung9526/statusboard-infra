@@ -1,0 +1,10 @@
+#backend-config
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: {{ .Values.namespace }}
+data:
+  SPRING_DATASOURCE_URL: {{ .Values.env.backend.SPRING_DATASOURCE_URL | quote }}
+  SPRING_JPA_HIBERNATE_DDL_AUTO: {{ .Values.env.backend.SPRING_JPA_HIBERNATE_DDL_AUTO | quote }}
+  SPRING_PROFILES_ACTIVE: {{ .Values.env.backend.SPRING_PROFILES_ACTIVE | quote }}

@@ -1,0 +1,40 @@
+#frontend
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: {{ .Values.namespace }}
+spec:
+  type: NodePort
+  ports:
+    - port: {{ .Values.service.frontend.port }}
+      nodePort: {{ .Values.service.frontend.nodePort }}
+      targetPort: {{ .Values.service.frontend.port }}
+  selector:
+    app: frontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.replicaCount.frontend }}
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: {{ .Values.image.frontend.repository }}:{{ .Values.image.frontend.tag }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.service.frontend.port }}
+          env:
+            - name: REACT_APP_BACKEND_URL
+              value: {{ .Values.env.frontend.REACT_APP_BACKEND_URL | quote }}
+

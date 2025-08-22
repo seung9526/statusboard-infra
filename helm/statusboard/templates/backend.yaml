@@ -1,0 +1,40 @@
+#backend.ymal
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: {{ .Values.namespace }}
+spec:
+  ports:
+    - port: {{ .Values.service.backend.port }}
+  selector:
+    app: backend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.replicaCount.backend }}
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: {{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.service.backend.port }}
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: {{ .Values.env.backend.SPRING_DATASOURCE_URL | quote }}
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: {{ .Values.env.backend.SPRING_JPA_HIBERNATE_DDL_AUTO | quote }}
+            - name: SPRING_PROFILES_ACTIVE
+              value: {{ .Values.env.backend.SPRING_PROFILES_ACTIVE | quote }}
