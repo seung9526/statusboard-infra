@@ -28,12 +28,20 @@ spec:
       labels:
         app: frontend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: frontend
           image: {{ .Values.image.frontend.repository }}:{{ .Values.image.frontend.tag }}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: {{ .Values.service.frontend.port }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
           env:
             - name: REACT_APP_BACKEND_URL
               value: {{ .Values.env.frontend.REACT_APP_BACKEND_URL | quote }}

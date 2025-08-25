@@ -7,6 +7,7 @@ metadata:
 spec:
   ports:
     - port: {{ .Values.service.backend.port }}
+      targetPort: {{ .Values.service.backend.port }}
   selector:
     app: backend
 ---
@@ -25,16 +26,38 @@ spec:
       labels:
         app: backend
     spec:
+      securityContext:
+        runAsNonRoot: true        # root로 안돌아가게
+        runAsUser: 1000           # UID 지정
       containers:
         - name: backend
           image: {{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: {{ .Values.service.backend.port }}
+          securityContext:
+            readOnlyRootFilesystem: true   # 루트 파일시스템 읽기 전용
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]               # 모든 권한 드랍
           env:
             - name: SPRING_DATASOURCE_URL
-              value: {{ .Values.env.backend.SPRING_DATASOURCE_URL | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "statusboard.fullname" . }}-db
+                  key: url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "statusboard.fullname" . }}-db
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "statusboard.fullname" . }}-db
+                  key: password
             - name: SPRING_JPA_HIBERNATE_DDL_AUTO
               value: {{ .Values.env.backend.SPRING_JPA_HIBERNATE_DDL_AUTO | quote }}
             - name: SPRING_PROFILES_ACTIVE
               value: {{ .Values.env.backend.SPRING_PROFILES_ACTIVE | quote }}
+
