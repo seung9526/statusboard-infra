@@ -1,4 +1,3 @@
-#db
 apiVersion: v1
 kind: Service
 metadata:
@@ -25,16 +24,28 @@ spec:
       labels:
         app: mariadb
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: mariadb
           image: {{ .Values.image.mariadb.repository }}:{{ .Values.image.mariadb.tag }}
-          env:
-            - name: MYSQL_ROOT_PASSWORD
-              value: {{ .Values.env.mariadb.rootPassword | quote }}
-            - name: MYSQL_DATABASE
-              value: {{ .Values.env.mariadb.database | quote }}
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: {{ .Values.service.mariadb.port }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "statusboard.fullname" . }}-db
+                  key: rootPassword
+            - name: MYSQL_DATABASE
+              value: {{ .Values.env.mariadb.database | quote }}
           volumeMounts:
             - name: mariadb-data
               mountPath: /var/lib/mysql

@@ -23,6 +23,9 @@ spec:
         app.kubernetes.io/name: {{ include "statusboard.name" . }}
         app.kubernetes.io/component: backend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: backend
           image: "{{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}"
@@ -30,13 +33,24 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.service.backend.port }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
           env:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:mariadb://{{ include "statusboard.fullname" . }}-mariadb:{{ .Values.service.mariadb.port }}/{{ .Values.env.mariadb.database }}"
             - name: SPRING_DATASOURCE_USERNAME
-              value: "{{ .Values.env.mariadb.rootPassword }}"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "statusboard.fullname" . }}-db
+                  key: username
             - name: SPRING_DATASOURCE_PASSWORD
-              value: "{{ .Values.env.mariadb.rootPassword }}"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "statusboard.fullname" . }}-db
+                  key: password
             - name: SPRING_JPA_HIBERNATE_DDL_AUTO
               value: "{{ .Values.env.backend.SPRING_JPA_HIBERNATE_DDL_AUTO }}"
             - name: SPRING_PROFILES_ACTIVE
@@ -67,6 +81,9 @@ spec:
         app.kubernetes.io/name: {{ include "statusboard.name" . }}
         app.kubernetes.io/component: frontend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: frontend
           image: "{{ .Values.image.frontend.repository }}:{{ .Values.image.frontend.tag }}"
@@ -74,6 +91,11 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.service.frontend.port }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
           env:
             - name: REACT_APP_BACKEND_URL
               value: "http://{{ include "statusboard.fullname" . }}-backend:{{ .Values.service.backend.port }}"
@@ -103,6 +125,9 @@ spec:
         app.kubernetes.io/name: {{ include "statusboard.name" . }}
         app.kubernetes.io/component: mariadb
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: mariadb
           image: "{{ .Values.image.mariadb.repository }}:{{ .Values.image.mariadb.tag }}"
@@ -110,9 +135,17 @@ spec:
           ports:
             - name: mysql
               containerPort: {{ .Values.service.mariadb.port }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
           env:
             - name: MYSQL_ROOT_PASSWORD
-              value: "{{ .Values.env.mariadb.rootPassword }}"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "statusboard.fullname" . }}-db
+                  key: rootPassword
             - name: MYSQL_DATABASE
               value: "{{ .Values.env.mariadb.database }}"
 
