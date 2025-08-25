@@ -9,7 +9,6 @@ StatusBoard 프로젝트의 Kubernetes 기반 인프라를 관리하는 레포�
 - **Ingress Nginx**: HTTP `/api` → backend, `/` → frontend  
 - **Port-Forward**: 로컬 개발용 지원
 
-## Architecture Diagram
 ![Architecture](./diagram.png)
 
 ## Components
