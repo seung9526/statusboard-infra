@@ -103,4 +103,4 @@ metricsServer:
     pullPolicy: IfNotPresent
 backend:
   image:
-    tag: dev-latest
+    tag: main-latest
