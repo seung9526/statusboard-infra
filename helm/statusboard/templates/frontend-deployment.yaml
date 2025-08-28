@@ -1,17 +1,3 @@
-#frontend
-apiVersion: v1
-kind: Service
-metadata:
-  name: frontend
-  namespace: {{ .Values.namespace }}
-spec:
-  type: NodePort
-  ports:
-    - port: {{ .Values.service.frontend.port }}
-      nodePort: {{ .Values.service.frontend.nodePort }}
-      targetPort: {{ .Values.service.frontend.port }}
-  selector:
-    app: frontend
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -30,7 +16,9 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
+        runAsUser: 101        # nginx 유저
+        runAsGroup: 101
+        fsGroup: 101          # 볼륨 그룹 권한 부여
       containers:
         - name: frontend
           image: {{ .Values.image.frontend.repository }}:{{ .Values.image.frontend.tag }}
@@ -45,4 +33,19 @@ spec:
           env:
             - name: REACT_APP_BACKEND_URL
               value: {{ .Values.env.frontend.REACT_APP_BACKEND_URL | quote }}
+          volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp
+            - name: run-volume
+              mountPath: /var/run     # 보통 /var/run -> /run symlink
+            - name: cache-volume
+              mountPath: /var/cache/nginx
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
+        - name: run-volume
+          emptyDir: {}
+        - name: cache-volume
+          emptyDir: {}
+
 
