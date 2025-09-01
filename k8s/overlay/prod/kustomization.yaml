@@ -1,0 +1,12 @@
+resources:
+  - ../../base/statusboard   # base 참조
+
+images:
+  - name: ghcr.io/seung9526/statusboard/backend
+    newTag: 0.1.0
+  - name: ghcr.io/seung9526/statusboard/frontend
+    newTag: 0.1.0
+
+replicas:
+  backend: 3
+  frontend: 3
