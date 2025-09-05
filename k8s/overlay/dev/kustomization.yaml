@@ -5,9 +5,9 @@ resources:
   - ../../base/statusboard
 
 images:
-  - name: seumg9526/statusboard-backend
+  - name: diamini/statusboard-backend
     newTag: 0.1.0
-  - name: seumg9526/statusboard-frontend
+  - name: diamini/statusboard-frontend
     newTag: 0.1.0
 
 replicas:

@@ -6,12 +6,12 @@ replicaCount:
   mariadb: 1
 image:
   backend:
-    repository: statusboard-backend
-    tag: latest
+    repository: diamini/statusboard-backend
+    tag: 0.1.0
     pullPolicy: IfNotPresent
   frontend:
-    repository: statusboard-frontend
-    tag: latest
+    repository: diamini/statusboard-frontend
+    tag: 0.1.0
     pullPolicy: IfNotPresent
   mariadb:
     repository: mariadb

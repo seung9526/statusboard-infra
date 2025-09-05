@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: seumg9526/statusboard-backend:latest
+        image: diamini/statusboard-backend:latest
         ports:
           - containerPort: 8080
         env:

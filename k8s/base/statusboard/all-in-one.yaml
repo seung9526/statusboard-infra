@@ -125,7 +125,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: seumg9526/statusboard-frontend:latest
+        image: diamini/statusboard-frontend:latest
         imagePullPolicy: IfNotPresent
         ports:
           - containerPort: 80
