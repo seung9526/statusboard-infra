@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/seung9526/statusboard-infra.git
     targetRevision: main
-    path: argocd          # dev/prod application yamls가 들어있는 폴더
+    path: argocd/applications          # dev/prod application yamls가 들어있는 폴더
     directory:
       recurse: true       # 하위 모든 yaml 읽기
   destination:
