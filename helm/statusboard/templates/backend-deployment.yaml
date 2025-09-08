@@ -12,6 +12,12 @@ spec:
     metadata:
       labels:
         app: backend
+      annotations:
+        {{- if .Values.monitoring.prometheus.enabled }}
+        prometheus.io/scrape: "{{ .Values.monitoring.prometheus.annotations.prometheus.io/scrape }}"
+        prometheus.io/path: "{{ .Values.monitoring.prometheus.annotations.prometheus.io/path }}"
+        prometheus.io/port: "{{ .Values.service.backend.port }}"
+        {{- end }}
     spec:
       securityContext:
         runAsNonRoot: true
@@ -53,4 +59,3 @@ spec:
       volumes:
         - name: tmp-volume
           emptyDir: {}
-
