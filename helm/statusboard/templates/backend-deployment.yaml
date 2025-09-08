@@ -14,9 +14,9 @@ spec:
         app: backend
       annotations:
         {{- if .Values.monitoring.prometheus.enabled }}
-        prometheus.io/scrape: "{{ .Values.monitoring.prometheus.annotations.prometheus.io/scrape }}"
-        prometheus.io/path: "{{ .Values.monitoring.prometheus.annotations.prometheus.io/path }}"
-        prometheus.io/port: "{{ .Values.service.backend.port }}"
+        "prometheus.io/scrape": "{{ .Values.monitoring.prometheus.annotations.scrape }}"
+        "prometheus.io/path": "{{ .Values.monitoring.prometheus.annotations.path }}"
+        "prometheus.io/port": "{{ .Values.monitoring.prometheus.annotations.port }}"
         {{- end }}
     spec:
       securityContext:
@@ -55,7 +55,8 @@ spec:
               value: {{ .Values.env.backend.SPRING_PROFILES_ACTIVE | quote }}
           volumeMounts:
             - name: tmp-volume
-              mountPath: /tmp    # Spring Boot(Tomcat) temp
+              mountPath: /tmp
       volumes:
         - name: tmp-volume
           emptyDir: {}
+

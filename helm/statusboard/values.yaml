@@ -108,5 +108,13 @@ monitoring:
   prometheus:
     enabled: true
     annotations:
-      prometheus.io/scrape: "true"
-      prometheus.io/path: "/actuator/prometheus"
+      scrape: "true"
+      path: "/actuator/prometheus"
+      port: "8080"
+monitoring:
+  prometheus:
+    enabled: true
+    annotations:
+      scrape: "true"
+      path: "/actuator/prometheus"
+      port: "8080"
