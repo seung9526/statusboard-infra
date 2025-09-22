@@ -1,3 +1,4 @@
+{{- if .Values.metricsServer.enabled }}
 #components
 # ServiceAccount
 apiVersion: v1
@@ -205,3 +206,4 @@ spec:
   version: v1beta1
   versionPriority: 100
 
+{{- end }}

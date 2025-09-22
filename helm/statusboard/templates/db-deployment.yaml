@@ -2,17 +2,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mariadb
+  name: {{ include "statusboard.fullname" . }}-mariadb
   namespace: {{ .Values.namespace }}
 spec:
   replicas: {{ .Values.replicaCount.mariadb }}
   selector:
     matchLabels:
-      app: mariadb
+      app.kubernetes.io/name: {{ include "statusboard.name" . }}
+      app.kubernetes.io/component: mariadb
   template:
     metadata:
       labels:
-        app: mariadb
+        app.kubernetes.io/name: {{ include "statusboard.name" . }}
+        app.kubernetes.io/component: mariadb
     spec:
       # MariaDB는 초기화/런타임에 광범위한 쓰기 필요 → 강제 비루트/읽기전용 끔
       containers:

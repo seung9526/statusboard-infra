@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "statusboard.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  type: LoadBalancer
   ports:
     - port: {{ .Values.service.backend.port }}
       targetPort: {{ .Values.service.backend.port }}

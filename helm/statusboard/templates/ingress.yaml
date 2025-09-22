@@ -10,7 +10,10 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
   annotations:
-    nginx.ingress.kubernetes.io/use-regex: "true"
+  # 문제가 되는 snippet들을 제거합니다.
+  # nginx.ingress.kubernetes.io/configuration-snippet: ...
+  # nginx.ingress.kubernetes.io/server-snippet: ...
+
     {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
@@ -20,37 +23,18 @@ spec:
     - host: {{ .Values.ingress.host | default "localhost" }}
       http:
         paths:
-          # 1️⃣ API 요청만 rewrite 적용
-          - path: /api(/|$)(.*)
-            pathType: ImplementationSpecific
+          # 1. API 요청은 백엔드로
+          - path: /api
+            pathType: Prefix
             backend:
               service:
                 name: {{ include "statusboard.fullname" . }}-backend
                 port:
                   number: {{ .Values.service.backend.port }}
-            # rewrite는 API 경로에만
-            nginx.ingress.kubernetes.io/rewrite-target: /$2
 
-          # 2️⃣ 정적 파일(js, css)은 rewrite 없이 그대로 전달
-          - path: /js(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: {{ include "statusboard.fullname" . }}-frontend
-                port:
-                  number: {{ .Values.service.frontend.port }}
-
-          - path: /css(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: {{ include "statusboard.fullname" . }}-frontend
-                port:
-                  number: {{ .Values.service.frontend.port }}
-
-          # 3️⃣ SPA fallback (index.html)도 rewrite 없이
-          - path: /(.*)
-            pathType: ImplementationSpecific
+          # 2. 그 외 모든 요청은 프론트엔드로
+          - path: /
+            pathType: Prefix
             backend:
               service:
                 name: {{ include "statusboard.fullname" . }}-frontend
@@ -63,4 +47,3 @@ spec:
       secretName: {{ .Values.ingress.tlsSecret }}
   {{- end }}
 {{- end }}
-

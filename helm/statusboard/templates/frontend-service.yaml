@@ -2,15 +2,15 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "statusboard.fullname" . }}-frontend
+  namespace: {{ .Values.namespace }}
   labels:
     {{- include "statusboard.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  type: LoadBalancer
   ports:
-    - port: {{ .Values.service.frontend.port }}
-      targetPort: {{ .Values.service.frontend.port }}
+    - name: http
+      port: {{ .Values.service.frontend.port }}       # 외부 접속 포트
+      targetPort: 80                                # 컨테이너 내부 포트
       protocol: TCP
-      name: http
   selector:
-    app.kubernetes.io/name: {{ include "statusboard.name" . }}
-    app.kubernetes.io/component: frontend
+    app: frontend

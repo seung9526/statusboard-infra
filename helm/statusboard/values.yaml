@@ -12,7 +12,7 @@ image:
   frontend:
     repository: diamini/statusboard-frontend
     tag: 0.1.0
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   mariadb:
     repository: mariadb
     tag: 11.8
@@ -24,6 +24,7 @@ service:
   frontend:
     port: 80
     nodePort: 30080
+    targetPort: 80
   mariadb:
     port: 3306
 env:
@@ -83,6 +84,7 @@ ingress:
           pathType: ImplementationSpecific
   tls: []
 metricsServer:
+  enabled: false
   serviceAccount:
     name: metrics-server
   clusterRole:
@@ -110,11 +112,4 @@ monitoring:
     annotations:
       scrape: "true"
       path: "/actuator/prometheus"
-      port: "8080"
-monitoring:
-  prometheus:
-    enabled: true
-    annotations:
-      scrape: "true"
-      path: "/actuator/prometheus"
-      port: "8080"
+      port: "8081"

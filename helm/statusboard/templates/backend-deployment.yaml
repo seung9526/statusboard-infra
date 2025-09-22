@@ -7,11 +7,13 @@ spec:
   replicas: {{ .Values.replicaCount.backend }}
   selector:
     matchLabels:
-      app: backend
+      app.kubernetes.io/name: {{ include "statusboard.name" . }}
+      app.kubernetes.io/component: backend
   template:
     metadata:
       labels:
-        app: backend
+        app.kubernetes.io/name: {{ include "statusboard.name" . }}
+        app.kubernetes.io/component: backend
       annotations:
         {{- if .Values.monitoring.prometheus.enabled }}
         "prometheus.io/scrape": "{{ .Values.monitoring.prometheus.annotations.scrape }}"
@@ -22,6 +24,17 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
+      initContainers:
+        - name: wait-for-mariadb
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z statusboard-mariadb {{ .Values.service.mariadb.port }}; do
+                echo "Waiting for MariaDB..."
+                sleep 2
+              done
       containers:
         - name: backend
           image: {{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}
@@ -29,16 +42,14 @@ spec:
           ports:
             - containerPort: {{ .Values.service.backend.port }}
           securityContext:
-            readOnlyRootFilesystem: true
+            readOnlyRootFilesystem: false
             runAsNonRoot: true
             capabilities:
               drop: ["ALL"]
           env:
+            # ⬇️ Secret에서 URL을 가져오는 대신, values.yaml의 값을 직접 사용하도록 수정했습니다.
             - name: SPRING_DATASOURCE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "statusboard.fullname" . }}-db
-                  key: url
+              value: {{ .Values.env.backend.SPRING_DATASOURCE_URL | quote }}
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -59,4 +70,3 @@ spec:
       volumes:
         - name: tmp-volume
           emptyDir: {}
-

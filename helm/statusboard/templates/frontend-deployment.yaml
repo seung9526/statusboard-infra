@@ -1,4 +1,4 @@
----
+# frontend-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -14,30 +14,36 @@ spec:
       labels:
         app: frontend
     spec:
+      # 🔹 Pod-level securityContext: container 아닌 pod 바로 아래에
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 101        # nginx 유저
-        runAsGroup: 101
-        fsGroup: 101          # 볼륨 그룹 권한 부여
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 101
       containers:
         - name: frontend
           image: {{ .Values.image.frontend.repository }}:{{ .Values.image.frontend.tag }}
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: {{ .Values.image.frontend.pullPolicy }}
           ports:
-            - containerPort: {{ .Values.service.frontend.port }}
+            - containerPort: 80
+          # 🔹 container-level securityContext 최소화
           securityContext:
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
+            readOnlyRootFilesystem: false
             capabilities:
-              drop: ["ALL"]
+              drop:
+                - ALL
+              add:
+                - CHOWN              # chown 권한 추가
+                - NET_BIND_SERVICE   # 80, 443 등 낮은 번호의 포트를 사용하기 위한 권한
+                - SETGID
+                - SETUID
           env:
             - name: REACT_APP_BACKEND_URL
-              value: {{ .Values.env.frontend.REACT_APP_BACKEND_URL | quote }}
+              value: {{ .Values.env.frontend.VUE_APP_BACKEND_URL | quote }}
           volumeMounts:
             - name: tmp-volume
               mountPath: /tmp
             - name: run-volume
-              mountPath: /var/run     # 보통 /var/run -> /run symlink
+              mountPath: /var/run
             - name: cache-volume
               mountPath: /var/cache/nginx
       volumes:
@@ -47,5 +53,3 @@ spec:
           emptyDir: {}
         - name: cache-volume
           emptyDir: {}
-
-
