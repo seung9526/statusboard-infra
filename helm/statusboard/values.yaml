@@ -113,3 +113,6 @@ monitoring:
       scrape: "true"
       path: "/actuator/prometheus"
       port: "8081"
+frontend:
+  image:
+    tag: main-latest
